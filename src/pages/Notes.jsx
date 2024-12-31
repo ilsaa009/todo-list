@@ -5,9 +5,12 @@ import ThemeOptions from "../components/ThemeOptions";
 import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 
 function Notes() {
-    const [notes, setNotes] = useState([]);
+    const [notes, setNotes] = useState(JSON.parse(localStorage.getItem("notes")) || []);
     const [dateTime, setDateTime] = useState("");
 
+    console.log(notes)
+
+    localStorage.setItem("notes", JSON.stringify(notes));
 
     const addNote = (noteBody) => {
         if(!noteBody.trim()){
@@ -37,13 +40,15 @@ function Notes() {
     };
 
     useEffect(() => {
-        const interval = setInterval(() => {
+        const updateDateTime = () => {
             const now = new Date();
             const formatDate = now.toLocaleDateString();
             const formatTime = now.toLocaleTimeString();
             setDateTime(`${formatDate} - ${formatTime}`);
-        }, 1000);
+        };
 
+        updateDateTime();
+        const interval = setInterval(updateDateTime, 1000);
         return () => clearInterval(interval);
     }, []);
     
@@ -69,7 +74,7 @@ function Notes() {
             <NoteForm onAddNote={addNote} />
             <p className="date-time">{dateTime}</p>
             <DragDropContext onDragEnd={handleOnDragEnd}>
-                <Droppable droppableId="notes">
+                <Droppable droppableId="note">
                     {(provided) =>(
                         <div 
                         {...provided.droppableProps}
