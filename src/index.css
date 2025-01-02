@@ -155,6 +155,7 @@ p{
   color: var(--button-solid-text-color);
 }
 
+
 .note-wrapper {
   display: flex;
   justify-content: space-between;
@@ -189,7 +190,7 @@ p{
   text-align: left;
   color: var(--primary-text-color);
 }
-.note-body.completed-text {
+.completed-text {
   text-decoration: line-through;
   color: #888;
 }

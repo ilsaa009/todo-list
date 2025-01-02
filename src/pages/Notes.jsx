@@ -1,115 +1,96 @@
-import { useState, useEffect } from "react";
-import NoteForm from "../components/NoteForm";
-import Note from "../components/Note";
-import ThemeOptions from "../components/ThemeOptions";
-import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
+// Notes.js
+import { useEffect, useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { addNote, completeNote, deleteNote, reorderNotes } from '../store/notesSlice';
+import NoteForm from '../components/NoteForm';
+import Note from '../components/Note';
+import ThemeOptions from '../components/ThemeOptions';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 
 function Notes() {
-    const [notes, setNotes] = useState(JSON.parse(localStorage.getItem("notes")) || []);
-    const [dateTime, setDateTime] = useState("");
+  const notes = useSelector((state) => state.notes.notes);
+  const dispatch = useDispatch();
+  const [dateTime, setDateTime] = useState('');
 
-    console.log(notes)
-
-    localStorage.setItem("notes", JSON.stringify(notes));
-
-    const addNote = (noteBody) => {
-        if(!noteBody.trim()){
-            alert("Please write something");
-            return;
-        }
-        const newNote = {
-            $id: Date.now(), 
-            completed: false,
-            body: noteBody,
-        };
-        setNotes((prevNotes) => [...prevNotes, newNote]);
+  const handleAddNote = (noteBody) => {
+    if (!noteBody.trim()) {
+      alert('Please write something');
+      return;
+    }
+    const newNote = {
+      $id: Date.now(),
+      completed: false,
+      body: noteBody,
     };
+    dispatch(addNote(newNote));
+  };
 
-    const completeNote = (id) => {
-        setNotes((prevNotes) =>
-          prevNotes.map((note) =>
-            note.$id === id
-              ? { ...note, completed: !note.completed}
-              : note
-          )
-        );
-      };
+  const handleCompleteNote = (id) => {
+    dispatch(completeNote(id));
+  };
 
-    const deleteNote = (id) => {
-        setNotes((prevNotes) => prevNotes.filter((note) => note.$id !== id));
-    };
+  const handleDeleteNote = (id) => {
+    dispatch(deleteNote(id));
+  };
 
-    useEffect(() => {
-        const updateDateTime = () => {
-            const now = new Date();
-            const formatDate = now.toLocaleDateString();
-            const formatTime = now.toLocaleTimeString();
-            setDateTime(`${formatDate} - ${formatTime}`);
-        };
+  const handleOnDragEnd = (result) => {
+    if (!result.destination) return;
 
-        updateDateTime();
-        const interval = setInterval(updateDateTime, 1000);
-        return () => clearInterval(interval);
-    }, []);
-    
-    function handleOnDragEnd(result) {
-        if (!result.destination) return;
-    
-        const items = Array.from(notes);
-        const [reorderedItem] = items.splice(result.source.index, 1);
-        items.splice(result.destination.index, 0, reorderedItem);
-    
-        setNotes(items);
-      }
-    return (
-        <>
-            <div>
-                <h1>Just do it</h1>
-            </div>
-            <div className="theme-options">
-                <ThemeOptions theme="light" />
-                <ThemeOptions theme="dark" />
-                <ThemeOptions theme="purple" />
-            </div>
-            <NoteForm onAddNote={addNote} />
-            <p className="date-time">{dateTime}</p>
-            <DragDropContext onDragEnd={handleOnDragEnd}>
-                <Droppable droppableId="note">
-                    {(provided) =>(
-                        <div 
-                        {...provided.droppableProps}
-                        ref={provided.innerRef}
-                        className="notes-List"
-                        >
-                            {notes.map((note, index) =>( 
-                                <Draggable
-                                key={note.$id}
-                                draggableId={note.$id.toString()}
-                                index={index}
-                                >
-                                    {(provided) => (
-                                        <div
-                                        ref={provided.innerRef}
-                                        {...provided.draggableProps}
-                                        {...provided.dragHandleProps}
-                                        >
-                                            <Note
-                                            noteData={note}
-                                            onDelete={() => deleteNote(note.$id)}
-                                            onComplete={() => completeNote(note.$id)}
-                                            />
-                                        </div>
-                                    )}
-                                </Draggable>
-                            ))}
-                            {provided.placeholder}
-                        </div>
-                    )}
-
-            </Droppable>
-    </DragDropContext>
-        </>
+    dispatch(
+      reorderNotes({
+        sourceIndex: result.source.index,
+        destinationIndex: result.destination.index,
+      })
     );
+  };
+
+  useEffect(() => {
+    const updateDateTime = () => {
+      const now = new Date();
+      setDateTime(`${now.toLocaleDateString()} - ${now.toLocaleTimeString()}`);
+    };
+
+    updateDateTime();
+    const interval = setInterval(updateDateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <>
+      <div>
+        <h1>Just do it</h1>
+      </div>
+      <div className="theme-options">
+        <ThemeOptions theme="light" />
+        <ThemeOptions theme="dark" />
+        <ThemeOptions theme="purple" />
+      </div>
+      <NoteForm onAddNote={handleAddNote} />
+      <p className="date-time">{dateTime}</p>
+      <DragDropContext onDragEnd={handleOnDragEnd}>
+        <Droppable droppableId="notes">
+          {(provided) => (
+            <div {...provided.droppableProps} ref={provided.innerRef} className="notes-List">
+              {notes.map((note, index) => (
+                <Draggable key={note.$id} draggableId={note.$id.toString()} index={index}>
+                  {(provided) => (
+                    <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
+                      <Note
+                        noteData={note}
+                        onDelete={() => handleDeleteNote(note.$id)}
+                        onComplete={() => handleCompleteNote(note.$id)}
+                      />
+                    </div>
+                  )}
+                </Draggable>
+              ))}
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
+    </>
+  );
 }
 
 export default Notes;
